@@ -1,5 +1,5 @@
 local M = {}
-local config = require("plugins.speechcraft.lua.speechcraft.config")
+local config = require("speechcraft.config")
 
 local function activate_speech(start_listening)
     -- Placeholder for speech recognition activation logic

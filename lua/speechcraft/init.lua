@@ -13,10 +13,10 @@ local function safe_require(module)
     return result
 end
 
-local config = safe_require("plugins.speechcraft.lua.speechcraft.config")
-local commands = safe_require("plugins.speechcraft.lua.speechcraft.commands")
-local speech_recognition = safe_require("plugins.speechcraft.lua.speechcraft.speech_recognition")
-local panel = safe_require("plugins.speechcraft.lua.speechcraft.panel")
+local config = safe_require("speechcraft.config")
+local commands = safe_require("speechcraft.commands")
+local speech_recognition = safe_require("speechcraft.speech_recognition")
+local panel = safe_require("speechcraft.panel")
 
 function M.setup(opts)
     print("SpeechCraft setup function called")

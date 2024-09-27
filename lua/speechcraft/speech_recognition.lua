@@ -1,6 +1,6 @@
 local M = {}
 
-local config = require("plugins.speechcraft.lua.speechcraft.config")
+local config = require("speechcraft.config")
 
 function M.init(commands)
     -- Placeholder for speech recognition initialization

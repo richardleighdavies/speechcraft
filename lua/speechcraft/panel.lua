@@ -150,7 +150,7 @@ function M.update_panel_content(content)
         api.nvim_buf_set_lines(content_bufnr, 0, -1, false, vim.split(content, "\n"))
 
         -- Check the markdown renderer configuration
-        if require("plugins.speechcraft.lua.speechcraft.config").options.markdown_renderer == "native" then
+        if require("speechcraft.config").options.markdown_renderer == "native" then
             -- Use Treesitter for markdown highlighting
             vim.cmd("set ft=markdown")
             vim.cmd("TSBufEnable highlight")  -- Enable Treesitter highlighting
