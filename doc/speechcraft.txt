@@ -1,0 +1,43 @@
+*speechcraft.txt*  Voice-activated text manipulation for Neovim
+
+==============================================================================
+INTRODUCTION                                                *speechcraft*
+
+SpeechCraft is an innovative text manipulation tool that leverages voice 
+commands for streamlined text editing in Neovim.
+
+==============================================================================
+SETUP                                                       *speechcraft-setup*
+
+To set up SpeechCraft with custom options, add the following to your init.lua:
+
+>
+    require("speechcraft").setup({
+        activation_key = "<C-s>",
+        speech_recognition_backend = "your_preferred_backend",
+        custom_commands = {
+            -- Add your custom commands here
+        }
+    })
+<
+
+==============================================================================
+USAGE                                                       *speechcraft-usage*
+
+1. Highlight the text you want to manipulate.
+2. Press and hold the activation key (default: <C-s>).
+3. Speak your command.
+4. Release the key to execute the command.
+
+==============================================================================
+COMMANDS                                                *speechcraft-commands*
+
+The following voice commands are available:
+
+- "Delete"
+- "Copy"
+- "Replace with [your text]"
+- "Comment out"
+
+==============================================================================
+ vim:tw=78:ts=8:ft=help:norl:
