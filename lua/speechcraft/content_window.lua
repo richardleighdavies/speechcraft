@@ -3,119 +3,127 @@ local M = {}
 
 M.width = 40
 M.buffer_name = "SpeechCraft-Content"
+M.header_name = "SpeechCraft-Header"
 
-local function create_buffer()
+local function create_buffer(name)
     local buf = api.nvim_create_buf(false, true)
     api.nvim_buf_set_option(buf, 'buftype', 'nofile')
     api.nvim_buf_set_option(buf, 'swapfile', false)
-    api.nvim_buf_set_option(buf, 'bufhidden', 'hide')
-    api.nvim_buf_set_option(buf, 'filetype', 'markdown')
+    api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
     api.nvim_buf_set_option(buf, 'modifiable', false)
-    api.nvim_buf_set_name(buf, M.buffer_name)
+    api.nvim_buf_set_option(buf, 'buflisted', false)
+    api.nvim_buf_set_name(buf, name)
     return buf
 end
 
-local function set_header(buf)
-    local header = {
-        "Speech Craft",
-        string.rep("─", M.width - 2)  -- Underline
-    }
-    api.nvim_buf_set_option(buf, 'modifiable', true)
-    api.nvim_buf_set_lines(buf, 0, -1, false, header)
-    api.nvim_buf_set_option(buf, 'modifiable', false)
+local function create_header_window()
+    local header_buf = create_buffer(M.header_name)
     
-    -- Set highlight for the header
+    -- Create header window
+    local header_width = M.width - 2  -- Account for borders
+    local header_height = 1
+    local header_win = api.nvim_open_win(header_buf, false, {
+        relative = 'editor',
+        width = header_width,
+        height = header_height,
+        col = vim.o.columns - header_width,
+        row = 0,
+        anchor = 'NE',
+        style = 'minimal',
+        border = 'single',
+        noautocmd = true
+    })
+
+    -- Set header content
+    api.nvim_buf_set_option(header_buf, 'modifiable', true)
+    api.nvim_buf_set_lines(header_buf, 0, -1, false, {"Speech Craft"})
+    api.nvim_buf_set_option(header_buf, 'modifiable', false)
+
+    -- Set header highlighting
     local ns_id = api.nvim_create_namespace("SpeechCraftHeader")
-    api.nvim_buf_add_highlight(buf, ns_id, "Title", 0, 0, -1)
-    api.nvim_buf_add_highlight(buf, ns_id, "NonText", 1, 0, -1)
+    api.nvim_buf_add_highlight(header_buf, ns_id, "Title", 0, 0, -1)
+
+    -- Set window options
+    api.nvim_win_set_option(header_win, 'winhighlight', 'Normal:SpeechCraftHeader')
+
+    return header_win
 end
 
 function M.open()
-    local win_id = M.get_window()
-    if win_id then
-        api.nvim_set_current_win(win_id)
+    if M.content_win and api.nvim_win_is_valid(M.content_win) then
+        api.nvim_set_current_win(M.content_win)
         return
     end
 
-    -- Create a new buffer if it doesn't exist
-    local buf = M.get_buffer()
-    if not buf then
-        buf = create_buffer()
-    end
+    -- Create header window
+    M.header_win = create_header_window()
 
-    -- Open a new window on the right side
-    vim.cmd('botright vertical ' .. M.width .. 'split')
-    win_id = api.nvim_get_current_win()
-    api.nvim_win_set_buf(win_id, buf)
+    -- Create content buffer if it doesn't exist
+    local content_buf = create_buffer(M.buffer_name)
+    api.nvim_buf_set_option(content_buf, 'filetype', 'markdown')
+
+    -- Create content window
+    local win_height = vim.o.lines - vim.o.cmdheight - 3  -- Account for header and statusline
+    M.content_win = api.nvim_open_win(content_buf, true, {
+        relative = 'editor',
+        width = M.width - 2,  -- Account for borders
+        height = win_height - 1,  -- Account for header
+        col = vim.o.columns - M.width + 2,
+        row = 1,  -- Position just below the header
+        anchor = 'NE',
+        style = 'minimal',
+        border = 'single',
+        noautocmd = true
+    })
 
     -- Set window options
-    api.nvim_win_set_option(win_id, 'number', false)
-    api.nvim_win_set_option(win_id, 'relativenumber', false)
-    api.nvim_win_set_option(win_id, 'wrap', false)
-    api.nvim_win_set_option(win_id, 'signcolumn', 'no')
-
-    -- Set the header
-    set_header(buf)
+    api.nvim_win_set_option(M.content_win, 'number', false)
+    api.nvim_win_set_option(M.content_win, 'relativenumber', false)
+    api.nvim_win_set_option(M.content_win, 'wrap', false)
+    api.nvim_win_set_option(M.content_win, 'signcolumn', 'no')
+    api.nvim_win_set_option(M.content_win, 'winfixwidth', true)
+    api.nvim_win_set_option(M.content_win, 'winfixheight', true)
 
     -- Return to the previous window
-    vim.cmd('wincmd p')
+    vim.cmd('noautocmd wincmd p')
 end
 
 function M.close()
-    local win_id = M.get_window()
-    if win_id then
-        api.nvim_win_close(win_id, true)
+    if M.header_win and api.nvim_win_is_valid(M.header_win) then
+        api.nvim_win_close(M.header_win, true)
     end
+    if M.content_win and api.nvim_win_is_valid(M.content_win) then
+        api.nvim_win_close(M.content_win, true)
+    end
+    M.header_win = nil
+    M.content_win = nil
 end
 
 function M.toggle()
-    local win_id = M.get_window()
-    if win_id then
+    if M.content_win and api.nvim_win_is_valid(M.content_win) then
         M.close()
     else
         M.open()
     end
 end
 
-function M.get_window()
-    for _, win in ipairs(api.nvim_list_wins()) do
-        local buf = api.nvim_win_get_buf(win)
-        if api.nvim_buf_get_name(buf):match(M.buffer_name .. "$") then
-            return win
-        end
-    end
-    return nil
-end
-
-function M.get_buffer()
-    for _, buf in ipairs(api.nvim_list_bufs()) do
-        if api.nvim_buf_get_name(buf):match(M.buffer_name .. "$") then
-            return buf
-        end
-    end
-    return nil
-end
-
 function M.set_content(content)
-    local buf = M.get_buffer()
-    if not buf then
+    if not M.content_win or not api.nvim_win_is_valid(M.content_win) then
         M.open()
-        buf = M.get_buffer()
     end
 
+    local buf = api.nvim_win_get_buf(M.content_win)
     api.nvim_buf_set_option(buf, 'modifiable', true)
-    local lines = vim.split(content, "\n")
-    api.nvim_buf_set_lines(buf, 2, -1, false, lines)  -- Start from line 3 (after header)
+    api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(content, "\n"))
     api.nvim_buf_set_option(buf, 'modifiable', false)
 end
 
 function M.add_content(content)
-    local buf = M.get_buffer()
-    if not buf then
+    if not M.content_win or not api.nvim_win_is_valid(M.content_win) then
         M.open()
-        buf = M.get_buffer()
     end
 
+    local buf = api.nvim_win_get_buf(M.content_win)
     local line_count = api.nvim_buf_line_count(buf)
     api.nvim_buf_set_option(buf, 'modifiable', true)
     api.nvim_buf_set_lines(buf, line_count, -1, false, vim.split(content, "\n"))
@@ -123,10 +131,10 @@ function M.add_content(content)
 end
 
 function M.clear_content()
-    local buf = M.get_buffer()
-    if buf then
+    if M.content_win and api.nvim_win_is_valid(M.content_win) then
+        local buf = api.nvim_win_get_buf(M.content_win)
         api.nvim_buf_set_option(buf, 'modifiable', true)
-        api.nvim_buf_set_lines(buf, 2, -1, false, {})  -- Clear everything except header
+        api.nvim_buf_set_lines(buf, 0, -1, false, {})
         api.nvim_buf_set_option(buf, 'modifiable', false)
     end
 end
@@ -139,6 +147,39 @@ function M.setup(opts)
     vim.api.nvim_set_keymap('n', '<leader>st', ':lua require("speechcraft.content_window").toggle()<CR>', {noremap = true, silent = true})
     vim.api.nvim_set_keymap('n', '<leader>so', ':lua require("speechcraft.content_window").open()<CR>', {noremap = true, silent = true})
     vim.api.nvim_set_keymap('n', '<leader>sc', ':lua require("speechcraft.content_window").close()<CR>', {noremap = true, silent = true})
+
+    -- Create highlight groups
+    vim.cmd([[
+        highlight SpeechCraftHeader guibg=#1e1e2e guifg=#89b4fa gui=bold
+    ]])
+
+    -- Set up autocommands to prevent normal buffers from opening in the SpeechCraft window
+    vim.cmd([[
+        augroup SpeechCraftWindowProtection
+            autocmd!
+            autocmd BufEnter * lua require('speechcraft.content_window').protect_window()
+        augroup END
+    ]])
+end
+
+function M.protect_window()
+    if M.content_win and api.nvim_get_current_win() == M.content_win then
+        local current_buf = api.nvim_get_current_buf()
+        local buf_name = api.nvim_buf_get_name(current_buf)
+        if not buf_name:match(M.buffer_name .. "$") then
+            -- If a different buffer is trying to open in our window, switch back to our buffer
+            local our_buf = api.nvim_create_buf(false, true)
+            api.nvim_buf_set_name(our_buf, M.buffer_name)
+            api.nvim_win_set_buf(M.content_win, our_buf)
+            -- Move the intruding buffer to a new window
+            vim.cmd('noautocmd wincmd v')
+            vim.cmd('noautocmd wincmd L')
+            local new_win = api.nvim_get_current_win()
+            api.nvim_win_set_buf(new_win, current_buf)
+            -- Return focus to the previous window
+            vim.cmd('noautocmd wincmd p')
+        end
+    end
 end
 
 return M
