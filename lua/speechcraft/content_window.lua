@@ -46,6 +46,23 @@ function M.create_content_window()
     M.set_header("SpeechCraft Content Window")
 end
 
+-- Function to hide the content window
+function M.hide_content_window()
+    if content_window_winnr and api.nvim_win_is_valid(content_window_winnr) then
+        api.nvim_win_hide(content_window_winnr)
+        content_window_winnr = nil
+    end
+end
+
+-- Function to toggle the content window
+function M.toggle_content_window()
+    if content_window_winnr and api.nvim_win_is_valid(content_window_winnr) then
+        M.hide_content_window()
+    else
+        M.create_content_window()
+    end
+end
+
 -- Function to set or update the header
 function M.set_header(header_text)
     if not content_window_bufnr or not api.nvim_buf_is_valid(content_window_bufnr) then return end
@@ -99,6 +116,13 @@ function M.toggle_focus()
             M.focus_content_window()
         end
     end
+end
+
+-- Function to load markdown from a file
+function M.load_markdown_from_file(filepath)
+    local content = vim.fn.readfile(filepath)
+    M.clear_content()
+    M.add_content(table.concat(content, "\n"))
 end
 
 -- Setup function to create keymaps

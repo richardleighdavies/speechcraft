@@ -47,18 +47,59 @@ function M.setup(opts)
 end
 
 -- Expose content window functions
-M.show_content_window = content_window.create_content_window
-M.hide_content_window = content_window.hide_content_window
-M.toggle_content_window = content_window.toggle_content_window
-M.focus_content_window = content_window.focus_content_window
-M.update_content_window = content_window.add_content
-M.load_markdown_from_file = content_window.load_markdown_from_file
+M.show_content_window = function()
+    if content_window and content_window.create_content_window then
+        content_window.create_content_window()
+    else
+        print("Warning: create_content_window function not available")
+    end
+end
 
-function M.clear_content_window()
+M.hide_content_window = function()
+    if content_window and content_window.hide_content_window then
+        content_window.hide_content_window()
+    else
+        print("Warning: hide_content_window function not available")
+    end
+end
+
+M.toggle_content_window = function()
+    if content_window and content_window.toggle_content_window then
+        content_window.toggle_content_window()
+    else
+        print("Warning: toggle_content_window function not available")
+    end
+end
+
+M.focus_content_window = function()
+    if content_window and content_window.focus_content_window then
+        content_window.focus_content_window()
+    else
+        print("Warning: focus_content_window function not available")
+    end
+end
+
+M.update_content_window = function(content)
+    if content_window and content_window.add_content then
+        content_window.add_content(content)
+    else
+        print("Warning: add_content function not available")
+    end
+end
+
+M.load_markdown_from_file = function(filepath)
+    if content_window and content_window.load_markdown_from_file then
+        content_window.load_markdown_from_file(filepath)
+    else
+        print("Warning: load_markdown_from_file function not available")
+    end
+end
+
+M.clear_content_window = function()
     if content_window and content_window.clear_content then
         content_window.clear_content()
     else
-        print("Warning: content_window module or clear_content function not available")
+        print("Warning: clear_content function not available")
     end
 end
 
