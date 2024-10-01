@@ -1,4 +1,3 @@
--- Inside lua/speechcraft/init.lua
 local M = {}
 
 print("SpeechCraft module loading...")
@@ -16,7 +15,7 @@ end
 local config = safe_require("speechcraft.config")
 local commands = safe_require("speechcraft.commands")
 local speech_recognition = safe_require("speechcraft.speech_recognition")
-local panel = safe_require("speechcraft.panel")
+local content_window = safe_require("speechcraft.content_window")
 
 function M.setup(opts)
     print("SpeechCraft setup function called")
@@ -39,27 +38,27 @@ function M.setup(opts)
         print("Warning: commands module or setup function not available")
     end
 
-    -- Initialize panel (but do not show it immediately)
-    if panel and panel.initialize_panel then
-        panel.initialize_panel()
+    -- Initialize content window (but do not show it immediately)
+    if content_window and content_window.setup then
+        content_window.setup()
     else
-        print("Warning: panel module or initialize_panel function not available")
+        print("Warning: content_window module or setup function not available")
     end
 end
 
--- Expose panel functions
-M.show_panel = panel.show_panel
-M.hide_panel = panel.hide_panel
-M.toggle_panel = panel.toggle_panel
-M.focus_content = panel.focus_content
-M.update_panel_content = panel.update_panel_content
-M.load_markdown_from_file = panel.load_markdown_from_file
+-- Expose content window functions
+M.show_content_window = content_window.create_content_window
+M.hide_content_window = content_window.hide_content_window
+M.toggle_content_window = content_window.toggle_content_window
+M.focus_content_window = content_window.focus_content_window
+M.update_content_window = content_window.add_content
+M.load_markdown_from_file = content_window.load_markdown_from_file
 
-function M.clear_panel()
-    if panel and panel.clear_panel then
-        panel.clear_panel()
+function M.clear_content_window()
+    if content_window and content_window.clear_content then
+        content_window.clear_content()
     else
-        print("Warning: panel module or clear_panel function not available")
+        print("Warning: content_window module or clear_content function not available")
     end
 end
 
