@@ -1,3 +1,4 @@
+-- Inside lua/speechcraft/init.lua
 local M = {}
 
 print("SpeechCraft module loading...")
