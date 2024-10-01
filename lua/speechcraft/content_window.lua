@@ -1,135 +1,128 @@
 local api = vim.api
 local M = {}
 
--- Buffer and window numbers for our content window
-local content_window_bufnr = nil
-local content_window_winnr = nil
+M.position = "left"
+M.width = 40
+M.buffer_name = "SpeechCraft-Content"
 
--- Function to create or get the content window buffer
-local function get_or_create_buffer()
-    if content_window_bufnr and api.nvim_buf_is_valid(content_window_bufnr) then
-        return content_window_bufnr
+function M.open()
+    -- Check if the window is already open
+    local win_id = M.get_window()
+    if win_id then
+        api.nvim_set_current_win(win_id)
+        return
     end
-    
-    content_window_bufnr = api.nvim_create_buf(false, true)
-    api.nvim_buf_set_option(content_window_bufnr, 'buftype', 'nofile')
-    api.nvim_buf_set_option(content_window_bufnr, 'bufhidden', 'hide')
-    api.nvim_buf_set_option(content_window_bufnr, 'swapfile', false)
-    api.nvim_buf_set_option(content_window_bufnr, 'modifiable', false)
-    api.nvim_buf_set_option(content_window_bufnr, 'filetype', 'markdown')
-    
-    return content_window_bufnr
-end
 
--- Function to create the content window
-function M.create_content_window()
-    local buf = get_or_create_buffer()
-    
-    -- Create a new window on the right side
-    content_window_winnr = api.nvim_open_win(buf, false, {
-        relative = 'editor',
-        width = math.floor(vim.o.columns * 0.3),
-        height = vim.o.lines - 4,
-        col = vim.o.columns,
-        row = 0,
-        anchor = 'NE',
-        style = 'minimal',
-        border = 'single'
-    })
-    
+    -- Determine split command based on position
+    local split_command = M.position == "left" and "topleft " or "botright "
+    split_command = split_command .. M.width .. "vsplit"
+
+    -- Open a new window
+    vim.cmd(split_command .. " " .. M.buffer_name)
+
+    -- Get the window and buffer numbers
+    local win = api.nvim_get_current_win()
+    local buf = api.nvim_get_current_buf()
+
+    -- Set buffer options
+    api.nvim_buf_set_option(buf, 'buftype', 'nofile')
+    api.nvim_buf_set_option(buf, 'swapfile', false)
+    api.nvim_buf_set_option(buf, 'bufhidden', 'hide')
+    api.nvim_buf_set_option(buf, 'filetype', 'markdown')
+
     -- Set window options
-    api.nvim_win_set_option(content_window_winnr, 'wrap', true)
-    api.nvim_win_set_option(content_window_winnr, 'cursorline', true)
-    api.nvim_win_set_option(content_window_winnr, 'winfixwidth', true)
-    
-    -- Add header
-    M.set_header("SpeechCraft Content Window")
+    api.nvim_win_set_option(win, 'number', false)
+    api.nvim_win_set_option(win, 'relativenumber', false)
+    api.nvim_win_set_option(win, 'wrap', false)
+    api.nvim_win_set_option(win, 'signcolumn', 'no')
+
+    -- Disable certain mappings in this window
+    local mappings = {
+        '<CR>', '<C-]>', '<C-v>', '<C-x>', '<C-t>'
+    }
+    for _, mapping in ipairs(mappings) do
+        vim.api.nvim_buf_set_keymap(buf, 'n', mapping, '', { noremap = true, silent = true })
+    end
+
+    -- Set a buffer name
+    api.nvim_buf_set_name(buf, M.buffer_name)
+
+    -- Return to the previous window
+    vim.cmd('wincmd p')
 end
 
--- Function to hide the content window
-function M.hide_content_window()
-    if content_window_winnr and api.nvim_win_is_valid(content_window_winnr) then
-        api.nvim_win_hide(content_window_winnr)
-        content_window_winnr = nil
+function M.close()
+    local win_id = M.get_window()
+    if win_id then
+        api.nvim_win_close(win_id, true)
     end
 end
 
--- Function to toggle the content window
-function M.toggle_content_window()
-    if content_window_winnr and api.nvim_win_is_valid(content_window_winnr) then
-        M.hide_content_window()
+function M.toggle()
+    local win_id = M.get_window()
+    if win_id then
+        M.close()
     else
-        M.create_content_window()
+        M.open()
     end
 end
 
--- Function to set or update the header
-function M.set_header(header_text)
-    if not content_window_bufnr or not api.nvim_buf_is_valid(content_window_bufnr) then return end
-    
-    api.nvim_buf_set_option(content_window_bufnr, 'modifiable', true)
-    api.nvim_buf_set_lines(content_window_bufnr, 0, 1, false, {header_text, string.rep('-', #header_text)})
-    api.nvim_buf_set_option(content_window_bufnr, 'modifiable', false)
-end
-
--- Function to add content to the content window
-function M.add_content(content)
-    if not content_window_bufnr or not api.nvim_buf_is_valid(content_window_bufnr) then return end
-    
-    local lines = vim.split(content, '\n')
-    local start_line = api.nvim_buf_line_count(content_window_bufnr)
-    
-    api.nvim_buf_set_option(content_window_bufnr, 'modifiable', true)
-    api.nvim_buf_set_lines(content_window_bufnr, start_line, -1, false, lines)
-    api.nvim_buf_set_option(content_window_bufnr, 'modifiable', false)
-end
-
--- Function to clear the content window content (except the header)
-function M.clear_content()
-    if not content_window_bufnr or not api.nvim_buf_is_valid(content_window_bufnr) then return end
-    
-    api.nvim_buf_set_option(content_window_bufnr, 'modifiable', true)
-    api.nvim_buf_set_lines(content_window_bufnr, 2, -1, false, {})
-    api.nvim_buf_set_option(content_window_bufnr, 'modifiable', false)
-end
-
--- Function to focus the content window
-function M.focus_content_window()
-    if content_window_winnr and api.nvim_win_is_valid(content_window_winnr) then
-        api.nvim_set_current_win(content_window_winnr)
-    end
-end
-
--- Function to unfocus the content window (return to previous window)
-function M.unfocus_content_window()
-    if content_window_winnr and api.nvim_win_is_valid(content_window_winnr) then
-        vim.cmd('wincmd p')
-    end
-end
-
--- Function to toggle focus on the content window
-function M.toggle_focus()
-    if content_window_winnr and api.nvim_win_is_valid(content_window_winnr) then
-        if api.nvim_get_current_win() == content_window_winnr then
-            M.unfocus_content_window()
-        else
-            M.focus_content_window()
+function M.get_window()
+    for _, win in ipairs(api.nvim_list_wins()) do
+        local buf = api.nvim_win_get_buf(win)
+        if api.nvim_buf_get_name(buf):match(M.buffer_name .. "$") then
+            return win
         end
     end
+    return nil
 end
 
--- Function to load markdown from a file
-function M.load_markdown_from_file(filepath)
-    local content = vim.fn.readfile(filepath)
-    M.clear_content()
-    M.add_content(table.concat(content, "\n"))
+function M.set_content(content)
+    local win_id = M.get_window()
+    if not win_id then
+        M.open()
+        win_id = M.get_window()
+    end
+
+    local buf = api.nvim_win_get_buf(win_id)
+    api.nvim_buf_set_option(buf, 'modifiable', true)
+    api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(content, "\n"))
+    api.nvim_buf_set_option(buf, 'modifiable', false)
 end
 
--- Setup function to create keymaps
-function M.setup()
-    vim.api.nvim_set_keymap('n', '<leader>sf', ':lua require("speechcraft.content_window").focus_content_window()<CR>', {noremap = true, silent = true})
-    vim.api.nvim_set_keymap('n', '<leader>su', ':lua require("speechcraft.content_window").unfocus_content_window()<CR>', {noremap = true, silent = true})
-    vim.api.nvim_set_keymap('n', '<leader>st', ':lua require("speechcraft.content_window").toggle_focus()<CR>', {noremap = true, silent = true})
+function M.add_content(content)
+    local win_id = M.get_window()
+    if not win_id then
+        M.open()
+        win_id = M.get_window()
+    end
+
+    local buf = api.nvim_win_get_buf(win_id)
+    local line_count = api.nvim_buf_line_count(buf)
+    api.nvim_buf_set_option(buf, 'modifiable', true)
+    api.nvim_buf_set_lines(buf, line_count, -1, false, vim.split(content, "\n"))
+    api.nvim_buf_set_option(buf, 'modifiable', false)
+end
+
+function M.clear_content()
+    local win_id = M.get_window()
+    if win_id then
+        local buf = api.nvim_win_get_buf(win_id)
+        api.nvim_buf_set_option(buf, 'modifiable', true)
+        api.nvim_buf_set_lines(buf, 0, -1, false, {})
+        api.nvim_buf_set_option(buf, 'modifiable', false)
+    end
+end
+
+function M.setup(opts)
+    opts = opts or {}
+    M.position = opts.position or M.position
+    M.width = opts.width or M.width
+
+    -- Set up keymaps
+    vim.api.nvim_set_keymap('n', '<leader>st', ':lua require("speechcraft.content_window").toggle()<CR>', {noremap = true, silent = true})
+    vim.api.nvim_set_keymap('n', '<leader>so', ':lua require("speechcraft.content_window").open()<CR>', {noremap = true, silent = true})
+    vim.api.nvim_set_keymap('n', '<leader>sc', ':lua require("speechcraft.content_window").close()<CR>', {noremap = true, silent = true})
 end
 
 return M
