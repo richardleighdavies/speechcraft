@@ -102,6 +102,13 @@ function M.is_active()
     return true
 end
 
+vim.api.nvim_create_autocmd("BufWinEnter", {
+    pattern = "SpeechCraft-Content",
+    callback = function()
+        vim.bo.buflisted = false
+    end
+})
+
 print("SpeechCraft module loaded, returning module table")
 
 return M

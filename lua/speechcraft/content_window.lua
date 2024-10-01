@@ -1,51 +1,43 @@
 local api = vim.api
 local M = {}
 
-M.position = "left"
 M.width = 40
 M.buffer_name = "SpeechCraft-Content"
 
+local function create_buffer()
+    local buf = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_option(buf, 'buftype', 'nofile')
+    api.nvim_buf_set_option(buf, 'swapfile', false)
+    api.nvim_buf_set_option(buf, 'bufhidden', 'hide')
+    api.nvim_buf_set_option(buf, 'filetype', 'markdown')
+    api.nvim_buf_set_option(buf, 'modifiable', false)
+    api.nvim_buf_set_name(buf, M.buffer_name)
+    return buf
+end
+
 function M.open()
-    -- Check if the window is already open
     local win_id = M.get_window()
     if win_id then
         api.nvim_set_current_win(win_id)
         return
     end
 
-    -- Determine split command based on position
-    local split_command = M.position == "left" and "topleft " or "botright "
-    split_command = split_command .. M.width .. "vsplit"
-
-    -- Open a new window
-    vim.cmd(split_command .. " " .. M.buffer_name)
-
-    -- Get the window and buffer numbers
-    local win = api.nvim_get_current_win()
-    local buf = api.nvim_get_current_buf()
-
-    -- Set buffer options
-    api.nvim_buf_set_option(buf, 'buftype', 'nofile')
-    api.nvim_buf_set_option(buf, 'swapfile', false)
-    api.nvim_buf_set_option(buf, 'bufhidden', 'hide')
-    api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-
-    -- Set window options
-    api.nvim_win_set_option(win, 'number', false)
-    api.nvim_win_set_option(win, 'relativenumber', false)
-    api.nvim_win_set_option(win, 'wrap', false)
-    api.nvim_win_set_option(win, 'signcolumn', 'no')
-
-    -- Disable certain mappings in this window
-    local mappings = {
-        '<CR>', '<C-]>', '<C-v>', '<C-x>', '<C-t>'
-    }
-    for _, mapping in ipairs(mappings) do
-        vim.api.nvim_buf_set_keymap(buf, 'n', mapping, '', { noremap = true, silent = true })
+    -- Create a new buffer if it doesn't exist
+    local buf = M.get_buffer()
+    if not buf then
+        buf = create_buffer()
     end
 
-    -- Set a buffer name
-    api.nvim_buf_set_name(buf, M.buffer_name)
+    -- Open a new window on the right side
+    vim.cmd('botright vertical ' .. M.width .. 'split')
+    win_id = api.nvim_get_current_win()
+    api.nvim_win_set_buf(win_id, buf)
+
+    -- Set window options
+    api.nvim_win_set_option(win_id, 'number', false)
+    api.nvim_win_set_option(win_id, 'relativenumber', false)
+    api.nvim_win_set_option(win_id, 'wrap', false)
+    api.nvim_win_set_option(win_id, 'signcolumn', 'no')
 
     -- Return to the previous window
     vim.cmd('wincmd p')
@@ -77,27 +69,34 @@ function M.get_window()
     return nil
 end
 
+function M.get_buffer()
+    for _, buf in ipairs(api.nvim_list_bufs()) do
+        if api.nvim_buf_get_name(buf):match(M.buffer_name .. "$") then
+            return buf
+        end
+    end
+    return nil
+end
+
 function M.set_content(content)
-    local win_id = M.get_window()
-    if not win_id then
+    local buf = M.get_buffer()
+    if not buf then
         M.open()
-        win_id = M.get_window()
+        buf = M.get_buffer()
     end
 
-    local buf = api.nvim_win_get_buf(win_id)
     api.nvim_buf_set_option(buf, 'modifiable', true)
     api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(content, "\n"))
     api.nvim_buf_set_option(buf, 'modifiable', false)
 end
 
 function M.add_content(content)
-    local win_id = M.get_window()
-    if not win_id then
+    local buf = M.get_buffer()
+    if not buf then
         M.open()
-        win_id = M.get_window()
+        buf = M.get_buffer()
     end
 
-    local buf = api.nvim_win_get_buf(win_id)
     local line_count = api.nvim_buf_line_count(buf)
     api.nvim_buf_set_option(buf, 'modifiable', true)
     api.nvim_buf_set_lines(buf, line_count, -1, false, vim.split(content, "\n"))
@@ -105,9 +104,8 @@ function M.add_content(content)
 end
 
 function M.clear_content()
-    local win_id = M.get_window()
-    if win_id then
-        local buf = api.nvim_win_get_buf(win_id)
+    local buf = M.get_buffer()
+    if buf then
         api.nvim_buf_set_option(buf, 'modifiable', true)
         api.nvim_buf_set_lines(buf, 0, -1, false, {})
         api.nvim_buf_set_option(buf, 'modifiable', false)
@@ -116,7 +114,6 @@ end
 
 function M.setup(opts)
     opts = opts or {}
-    M.position = opts.position or M.position
     M.width = opts.width or M.width
 
     -- Set up keymaps
