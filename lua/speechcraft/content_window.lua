@@ -15,6 +15,21 @@ local function create_buffer()
     return buf
 end
 
+local function set_header(buf)
+    local header = {
+        "Speech Craft",
+        string.rep("─", M.width - 2)  -- Underline
+    }
+    api.nvim_buf_set_option(buf, 'modifiable', true)
+    api.nvim_buf_set_lines(buf, 0, -1, false, header)
+    api.nvim_buf_set_option(buf, 'modifiable', false)
+    
+    -- Set highlight for the header
+    local ns_id = api.nvim_create_namespace("SpeechCraftHeader")
+    api.nvim_buf_add_highlight(buf, ns_id, "Title", 0, 0, -1)
+    api.nvim_buf_add_highlight(buf, ns_id, "NonText", 1, 0, -1)
+end
+
 function M.open()
     local win_id = M.get_window()
     if win_id then
@@ -38,6 +53,9 @@ function M.open()
     api.nvim_win_set_option(win_id, 'relativenumber', false)
     api.nvim_win_set_option(win_id, 'wrap', false)
     api.nvim_win_set_option(win_id, 'signcolumn', 'no')
+
+    -- Set the header
+    set_header(buf)
 
     -- Return to the previous window
     vim.cmd('wincmd p')
@@ -86,7 +104,8 @@ function M.set_content(content)
     end
 
     api.nvim_buf_set_option(buf, 'modifiable', true)
-    api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(content, "\n"))
+    local lines = vim.split(content, "\n")
+    api.nvim_buf_set_lines(buf, 2, -1, false, lines)  -- Start from line 3 (after header)
     api.nvim_buf_set_option(buf, 'modifiable', false)
 end
 
@@ -107,7 +126,7 @@ function M.clear_content()
     local buf = M.get_buffer()
     if buf then
         api.nvim_buf_set_option(buf, 'modifiable', true)
-        api.nvim_buf_set_lines(buf, 0, -1, false, {})
+        api.nvim_buf_set_lines(buf, 2, -1, false, {})  -- Clear everything except header
         api.nvim_buf_set_option(buf, 'modifiable', false)
     end
 end
