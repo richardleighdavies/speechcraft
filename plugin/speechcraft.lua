@@ -8,7 +8,7 @@ vim.api.nvim_create_augroup("SpeechCraft", { clear = true })
 vim.api.nvim_create_autocmd("VimEnter", {
     group = "SpeechCraft",
     callback = function()
-        require("speechcraft").setup()
+        require("speechcraft").setup({})  -- Pass an empty table if no options are needed
     end,
 })
 

@@ -1,4 +1,3 @@
- -- Inside lua/speechcraft/init.lua
 local M = {}
 
 print("SpeechCraft module loading...")
@@ -20,6 +19,7 @@ local content_window = safe_require("speechcraft.content_window")
 
 function M.setup(opts)
     print("SpeechCraft setup function called")
+    opts = opts or {}  -- Ensure opts is a table
 
     if config and config.setup then
         config.setup(opts)
@@ -48,12 +48,53 @@ function M.setup(opts)
 end
 
 -- Expose content window functions
-M.open_content_window = content_window.open
-M.close_content_window = content_window.close
-M.toggle_content_window = content_window.toggle
-M.set_content_window = content_window.set_content
-M.add_content_window = content_window.add_content
-M.clear_content_window = content_window.clear_content
+M.open_content_window = function()
+    if content_window and content_window.open then
+        content_window.open()
+    else
+        print("Warning: open function not available in content_window module")
+    end
+end
+
+M.close_content_window = function()
+    if content_window and content_window.close then
+        content_window.close()
+    else
+        print("Warning: close function not available in content_window module")
+    end
+end
+
+M.toggle_content_window = function()
+    if content_window and content_window.toggle then
+        content_window.toggle()
+    else
+        print("Warning: toggle function not available in content_window module")
+    end
+end
+
+M.set_content_window = function(content)
+    if content_window and content_window.set_content then
+        content_window.set_content(content)
+    else
+        print("Warning: set_content function not available in content_window module")
+    end
+end
+
+M.add_content_window = function(content)
+    if content_window and content_window.add_content then
+        content_window.add_content(content)
+    else
+        print("Warning: add_content function not available in content_window module")
+    end
+end
+
+M.clear_content_window = function()
+    if content_window and content_window.clear_content then
+        content_window.clear_content()
+    else
+        print("Warning: clear_content function not available in content_window module")
+    end
+end
 
 function M.is_active()
     print("SpeechCraft is_active function called")
@@ -62,4 +103,4 @@ end
 
 print("SpeechCraft module loaded, returning module table")
 
-return M 
+return M
